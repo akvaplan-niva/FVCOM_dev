@@ -48,18 +48,24 @@
 #========== TOPDIR ========================================================
 # TOPDIR is the directory in which this make file and the fvcom source reside
 
-           TOPDIR        = /cluster/home/qin/FVCOM_dev/src
+           TOPDIR        = /cluster/home/$(USER)/fvcom/compile/FVCOM_dev/src
 #EXAMPLE
 # TOPDIR = /home/user/cchen/FVCOM_source
 # TOPDIR must be set!
 #========== INSTALLDIR =====================================================
 # INSTALLDIR is the directory where you wish to install external libraries
 # The default is in the $(TOPDIR)/libs/install, but you can choose...
-            INSTALLDIR    = /cluster/home/qin/fvcom-petsc/FVCOM_chen/src_semi/libs/install
+            INSTALLDIR    = $(TOPDIR)/libs/install
+
+# Test this one
+       	    LOCAL_DEPS = $(HOME)/fvcom/compile/fvcom-clean/local
+
+
 #===========================================================================
 # PREPROCESSOR OPTIONS FOR CPP
 #            DEF_FLAGS     = -P -C -traditional 
-            DEF_FLAGS     = -P -traditional 
+#            DEF_FLAGS     = -P -traditional 
+            DEF_FLAGS     =  -P -traditional -nostdinc 
 #===========================================================================
 #
 ####################### MEDM ENVIRONMENT #####################################
@@ -79,9 +85,9 @@ endif
 
 ###########################################################################
 
-# LOCAL INSTAL
-             LIBDIR       =  -L$(INSTALLDIR)/lib
-             INCDIR       =  -I$(INSTALLDIR)/include -I${PETSC_DIR}/include -I${PETSC_DIR}/include/petsc/finclude
+# LOCAL INSTALl
+            LIBDIR       =  -L$(INSTALLDIR)/lib
+            INCDIR       =  -I$(INSTALLDIR)/include
 
 
 #--------------------------------------------------------------------------
@@ -100,8 +106,9 @@ endif
 #--------------------------------------------------------------------------
 
 #            FLAG_USE_COMPRESSION = -DUSE_COMPRESSION
-            IOLIBS  = -L/cluster/software/netCDF-Fortran/4.6.1-gompi-2023a/lib -lnetcdff -lnetcdf
-            IOINCS  = -I/cluster/software/netCDF-Fortran/4.6.1-gompi-2023a/include
+             IOLIBS = $(shell nf-config --flibs)
+             IOINCS = $(shell nf-config --fflags)
+	     
 #--------------------------------------------------------------------------
 #     PETSC 
 #       PETSC IS REQUIRED IF ANY OF THE FOLLOWING FLAGS IS TURNED ON:
@@ -173,15 +180,18 @@ endif
 
              FLAG_4 = -DMULTIPROCESSOR
 #         If using METIS 5 or above, uncomment FLAG_411 and read the file readme_metis in folder METIS_source for detail
-#	     FLAG_411 = -DMETIS_5
+	     FLAG_411 = -DMETIS_5
+	     PARTINCS = -I$(LOCAL_DEPS)/include
+	     PARTLIBS = -L$(LOCAL_DEPS)/lib64 -lmetis -lGKlib -lm
+	     
 #        If FLAG_411 is defined, uncomment path below	     
 #             PARLIB = 
-#             PARTINCS = -I/usr/local/install/metis/5.1.0/intel/19/include
-#             PARTLIBS = -L/usr/local/install/metis/5.1.0/intel/19/lib -lmetis
+#             PARTINC = -I$(EBROOTMETIS)/include
+#             PARTLIBS = -L$(EBROOTMETIS)/lib -lmetis
 #        If FLAG_411 is not defined, uncomment path below
-             PARLIB = -lmetis  #-L/usr/local/lib -lmetis
-             PARTINCS =
-             PARTLIBS =
+#             PARLIB = -lmetis  #-L/usr/local/lib -lmetis
+#             PARTINCS =
+#             PARTLIBS =
 
 #--------------------------------------------------------------------------
 #        WATER_QUALITY      INCLUDE EPA WATER QUALITY MOD
@@ -209,10 +219,10 @@ endif
 #
 #--------------------------------------------------------------------------
 
-             FLAG_6 = -DPROJ
-
-             PROJLIBS       = -lfproj4 -lproj -lm
-             PROJINCS       =
+#             FLAG_6 = -DPROJ
+#
+#             PROJLIBS       = -lfproj4 -lproj -lm
+#             PROJINCS       =
 
 #--------------------------------------------------------------------------
 #        DATA_ASSIMILATION  INCLUDE NUDGING BASED DATA ASSIMILATION FOR
@@ -451,7 +461,7 @@ endif
 #        NON-HYDROSTATIC MODEL:
 #--------------------------------------------------------------------------
 
-          FLAG_30 =  -DNH
+#          FLAG_30 =  -DNH
 
 #--------------------------------------------------------------------------
 #        PARTICLE TRACKING
@@ -513,14 +523,14 @@ endif
 #            FLAG_52  = -DICENUDGE
 #           FLAG_521 = -DICENUDGE_DIAGNOSIS
 #---------------------------------------------------------------------------
-#       MTT plume model, takes a bottom hydrothermal source
+#       MTT plume model, takes a bottom hydrothermal source 
 #       (heat/salt/tracer flux) and computes how a buoyant plume rises and
-#       entrains ambiet water using MTT theory, then injects the diluted
-#       plume water into the model grid at the height where it becomes
+#       entrains ambiet water using MTT theory, then injects the diluted 
+#       plume water into the model grid at the height where it becomes 
 #       neutrally buoyant.
 #--------------------------------------------------------------------------
-#           FLAG_61  = -DPLUME
-#           FLAG_611 = -DPLUME_CALCULATED
+           FLAG_61  = -DPLUME
+           FLAG_611 = -DPLUME_CALCULATED
 
 
 #--------------------------------------------------------------------------
@@ -625,7 +635,8 @@ endif
 #--------------------------------------------------------------------------
 #  Betzy Gfortran
 #--------------------------------------------------------------------------
-         CPP      = /usr/bin/cpp
+#         CPP      = /usr/bin/cpp
+#         CPP      = /usr/bin/cpp
          COMPILER = -DGFORTRAN
          CC       = mpicc
          CXX      = mpicxx
@@ -633,7 +644,7 @@ endif
          FC       = mpif90
          DEBFLGS  = -cpp
 	 OPT      = -O3 -g -fallow-argument-mismatch -ffree-line-length-none
-	 
+	 CPP = $(shell command -v cpp)
 
 #--------------------------------------------------------------------------
 #  gfortran defs 
@@ -700,7 +711,7 @@ endif
    $(FLAG_35) $(FLAG_36) $(FLAG_37) $(FLAG_38) \
    $(FLAG_39) $(FLAG_40) $(FLAG_41) $(FLAG_42) \
    $(FLAG_43) $(FLAG_44) $(FLAG_45) $(FLAG_80) $(FLAG_81) $(FLAG_LAM) $(FLAG_411) \
-   $(FLAG_51) $(FLAG_52) $(FLAG_521) $(FLAG_61) $(FLAG_611) \     
+   $(FLAG_51) $(FLAG_52) $(FLAG_521) $(FLAG_61) $(FLAG_611) \
    $(FLAG_101) $(FLAG_102) $(FLAG_103) $(FLAG_104) $(FLAG_105) $(FLAG_321)\
    $(FLAG_211) $(FLAG_212) $(FLAG_213) $(FLAG_251) $(FLAG_261) $(FLAG_262)\
    $(FLAG_USE_NETCDF4) $(FLAG_USE_COMPRESSION)
