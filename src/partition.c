@@ -68,13 +68,33 @@ void partition_(int* npartsin, int* nein, int* nnin, int* ncommonin,  int* nv[],
       eptr[i] = i*3+1; 
   }
 
-  for (j=40, i=0; i < j; i++) {
-      options[i] = (*optionsin)[i];
+  METIS_SetDefaultOptions(options);
+  options[METIS_OPTION_NUMBERING] = 1;
+
+  printf("METIS_OPTION_NUMBERING = %d\n",
+       (int)options[METIS_OPTION_NUMBERING]);
+
+  printf("METIS input: ne=%d nn=%d ncommon=%d nparts=%d\n",
+       ne, nn, ncommon, nparts);
+  
+  //METIS_PartMeshDual(&ne, &nn, eptr, eind, NULL, NULL, &ncommon, &nparts, NULL, options, &objval, epart, npart);
+  //  printf("edgecut %d\n",objval);
+
+  int status = METIS_PartMeshDual(
+    &ne, &nn, eptr, eind,
+    NULL, NULL, &ncommon, &nparts,
+    NULL, options, &objval, epart, npart
+  );
+
+  printf("METIS status = %d (METIS_OK = %d)\n", status, METIS_OK);
+  fflush(stdout);
+
+  if (status != METIS_OK) {
+    fprintf(stderr, "ERROR: METIS partitioning failed!\n");
+    abort();
   }
 
-
-  METIS_PartMeshDual(&ne, &nn, eptr, eind, NULL, NULL, &ncommon, &nparts, NULL, options, &objval, epart, npart);
-  printf("edgecut %d\n",objval); 
+  printf("edgecut %d\n", objval);
 
   // set return values
   (*objvalout) = objval;
