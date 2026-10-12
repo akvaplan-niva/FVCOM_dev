@@ -179,6 +179,11 @@
          
          DO K=1,NHE
             J = HE_LST(K)
+            IF (EL_PID(J) < 1 .OR. EL_PID(J) > NPROCS) THEN
+               WRITE(*,*) 'INVALID EL_PID:', EL_PID(J), &
+               'J=', J, 'NPROCS=', NPROCS, 'MYID=', MYID
+               ERROR STOP 'Invalid partition index in GENMAP'
+            END IF
             FCHECK= DBLE(NVG(J,1)-NGLOB)*DBLE(NVG(J,2)-NGLOB)*DBLE(NVG(J,3)-NGLOB)
             IF(ABS(FCHECK) < 1.0 )THEN
                NTEMP3(I,EL_PID(J)) = 1
