@@ -128,8 +128,8 @@ endif
 #            include ${PETSC_DIR}/bmake/common/variables
 #
 #       FOR VERSION 3.18.5
-            FLAG_41 = -DPETSC_C
-            include ${PETSC_DIR}/lib/petsc/conf/variables
+#            FLAG_41 = -DPETSC_C
+#            include ${PETSC_DIR}/lib/petsc/conf/variables
 
 #==========================================================================
 #  BEGIN USER DEFINITION SECTION
@@ -261,7 +261,7 @@ endif
 #  Semi-Implicit time stepping method
 #--------------------------------------------------------------------------
 
-             FLAG_9 = -DSEMI_IMPLICIT
+#             FLAG_9 = -DSEMI_IMPLICIT
 
 
 #---------------------------------------------------------------------------
@@ -309,7 +309,7 @@ endif
 #       RIVER INPUT FILES!
 #--------------------------------------------------------------------------
 
-#            FLAG_14 = -DRIVER_FLOAT
+            FLAG_14 = -DRIVER_FLOAT
 
 #--------------------------------------------------------------------------
 #        The TVD (total variational diminishing) option for FVCOM was developed by 
@@ -529,8 +529,8 @@ endif
 #       plume water into the model grid at the height where it becomes 
 #       neutrally buoyant.
 #--------------------------------------------------------------------------
-           FLAG_61  = -DPLUME
-           FLAG_611 = -DPLUME_CALCULATED
+#           FLAG_61  = -DPLUME
+#           FLAG_611 = -DPLUME_CALCULATED
 
 
 #--------------------------------------------------------------------------
@@ -633,7 +633,7 @@ endif
 #         VISOPT   = -Wl,--export-dynamic
 #         LDFLAGS  =  $(VISITLIBPATH)
 #--------------------------------------------------------------------------
-#  Betzy Gfortran
+#  Sigma2 Gfortran
 #--------------------------------------------------------------------------
 #         CPP      = /usr/bin/cpp
 #         CPP      = /usr/bin/cpp
@@ -644,7 +644,7 @@ endif
          FC       = mpif90
          DEBFLGS  = -cpp
 	 OPT      = -O3 -g -fallow-argument-mismatch -ffree-line-length-none
-	 CPP = $(shell command -v cpp)
+	 CPP      = /usr/bin/cpp
 
 #--------------------------------------------------------------------------
 #  gfortran defs 
