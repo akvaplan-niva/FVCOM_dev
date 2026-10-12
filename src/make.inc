@@ -644,7 +644,7 @@ endif
          FC       = mpif90
          DEBFLGS  = -cpp
 	 OPT      = -O3 -g -fallow-argument-mismatch -ffree-line-length-none
-	 CPP      = /usr/bin/cpp
+	 CPP = /usr/bin/cpp
 
 #--------------------------------------------------------------------------
 #  gfortran defs 
@@ -691,6 +691,24 @@ endif
 #==========================================================================
 #  END USER DEFINITION SECTION
 #==========================================================================
+#--------------------------------------------------------------------------
+# PETSc auto-activation (PETSc 3.18.5 on Olivia)
+# Activate PETSc if a model option that requires it is selected.
+# The FVCOM makefile uses FLAG_41 in CPPARGS and PETSC_LIB / PETSC_FC_INCLUDES.
+#--------------------------------------------------------------------------
+PETSC_DIR ?= $(HOME)/fvcom/compile/fvcom-clean/local/petsc-hypre
+
+FVCOM_PETSC_REQUIRED_FLAGS := -DDATA_ASSIM -DSEMI_IMPLICIT -DRRKF -DENKF -DNH -DWAVE_OFFLINE
+FVCOM_SELECTED_PETSC_FLAGS := $(filter $(FVCOM_PETSC_REQUIRED_FLAGS),$(FLAG_7) $(FLAG_9) $(FLAG_23) $(FLAG_30) $(FLAG_37))
+
+ifneq ($(strip $(FVCOM_SELECTED_PETSC_FLAGS)),)
+  ifeq ($(wildcard $(PETSC_DIR)/lib/petsc/conf/variables),)
+    $(error FVCOM options $(FVCOM_SELECTED_PETSC_FLAGS) require PETSc, but PETSC_DIR=$(PETSC_DIR) has no lib/petsc/conf/variables)
+  endif
+  FLAG_41 = -DPETSC_C
+  include $(PETSC_DIR)/lib/petsc/conf/variables
+endif
+
          CPPFLAGS = $(DEF_FLAGS) $(COMPILER)
          FFLAGS = $(DEBFLGS) $(OPT)
          MDEPFLAGS = --cpp --fext=f90 --file=-
