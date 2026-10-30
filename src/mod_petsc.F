@@ -53,7 +53,7 @@ MODULE MOD_PETSc
 #include "petsc/finclude/petsc.h"
 use petscmat
 use petscvec
-use petscpc
+use petscksp
 use petscksp
 use petscis
   IMPLICIT NONE
@@ -1104,7 +1104,9 @@ use petscis
   !============================================================================
   IMPLICIT NONE
   CHARACTER(LEN=20) :: SUBNAME = 'PETSc_SOLVER'
-  PetscInt :: REASON, IERR
+  KSPConvergedReason :: REASON
+  PetscInt :: IERR
+  INTEGER :: IREASON
 
   IF(PDEBUG) WRITE(PUNIT,*) 'STARTING: ', TRIM(SUBNAME)
   !---------------------------------------------------------
@@ -1124,7 +1126,8 @@ use petscis
 
   !check what happened (divergence/convergence) and report
   CALL KSPGetConvergedReason(Ksp,REASON,IERR)
-  IF(REASON < 0) THEN
+  IREASON = TRANSFER(REASON, IREASON)
+  IF(IREASON < 0) THEN
     IF(PMSR) THEN
       WRITE (PSCRN,*) 'PETSc SOLVER HAS DIVERGED: STOPPING...'
     ENDIF
@@ -1155,12 +1158,15 @@ use petscis
 # if defined (SEMI_IMPLICIT) || (NH)
   SUBROUTINE PETSc_SOLVER_EL
   IMPLICIT NONE
-  PetscInt :: REASON, IERR
+  KSPConvergedReason :: REASON
+  PetscInt :: IERR
+  INTEGER :: IREASON
 
   CALL KSPSolve(Ksp_EL,B_EL,X_EL,IERR);CHKERRQ(IERR)
 
   CALL KSPGetConvergedReason(Ksp_EL,REASON,IERR)
-  IF(REASON < 0) THEN
+  IREASON = TRANSFER(REASON, IREASON)
+  IF(IREASON < 0) THEN
     IF(PMSR) THEN
       WRITE (PSCRN,*) 'PETSc SOLVER HAS DIVERGED IN EL CAL: STOPPING...'
     ENDIF
@@ -1181,13 +1187,15 @@ use petscis
 # if defined (WAVE_CURRENT_INTERACTION) && !defined (EXPLICIT)
   SUBROUTINE PETSc_SOLVER_WAVE
   IMPLICIT NONE
-  PetscInt :: REASON
+  KSPConvergedReason :: REASON
+  INTEGER :: IREASON
   PetscInt :: IERR
 
   CALL KSPSolve(Ksp_WAVE,B_WAVE,X_WAVE,IERR);CHKERRQ(IERR)
 
   CALL KSPGetConvergedReason(Ksp_WAVE,REASON,IERR)
-  IF(REASON < 0)THEN
+  IREASON = TRANSFER(REASON, IREASON)
+  IF(IREASON < 0)THEN
     IF(PMSR)THEN
       WRITE(PSCRN,*) 'PETSc SOLVER HAS DIVERGED IN WAVE CAL: STOPPING...'
     END IF
