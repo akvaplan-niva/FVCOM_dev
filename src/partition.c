@@ -1,94 +1,86 @@
-
 /*
- * Copyright 1997, Regents of the University of Minnesota
+ * partition.c — METIS 5 wrapper for FVCOM domain decomposition.
  *
- * 
+ * Replaces the fork's src/partition.c, which was ported from the METIS 4
+ * interface but never updated for METIS 5. Two interface bugs made any run
+ * on this stack die in "TOTAL NUMBER OF ELEMENTS SET UP TO RECEIVE DATA
+ * NOT EQUAL TO TOTAL NUMBER OF HALO ELEMENTS" (observed with conda metis
+ * 5.x, 16 ranks; the Fortran caller mod_par.F keeps its own METIS-4-era
+ * option enum):
  *
- * This file reads in the element node connectivity array of a mesh and 
- * partitions both the elements and the nodes using KMETIS on the dual graph.
+ * 1. METIS 5's C API is 0-based, but the Fortran caller passes 1-based
+ *    node ids (NVG) and the old code built 1-based CSR pointers
+ *    (eptr[i] = i*3+1). METIS never got METIS_OPTION_NUMBERING because
+ *    FVCOM sets it at METIS-4 slot 18, while METIS 5.1's enum has it at
+ *    index 19 (NIPARTS was inserted at 6, shifting everything after it).
+ *    The option therefore silently landed on NSEPS, and every other
+ *    FVCOM-set knob was misaligned too (NITER->NIPARTS, UFACTOR->PFACTOR,
+ *    ...), while the real slots kept -1 (defaults).
+ * 2. With NUMBERING left at its 0 default, METIS returned 0-based element
+ *    partitions (0..nparts-1) that FVCOM consumed as 1..nparts: element
+ *    set 0 was orphaned and the last rank got an empty domain.
  *
- * Started 9/29/97
- * George
- *
- * $Id: partdmesh.c,v 1.1 1998/11/27 17:59:38 karypis Exp $
- *
+ * Fix entirely on this side of the F(ortran)/C boundary, so every caller
+ * (level-1, level-2, dam paths) keeps its 1-based semantics:
+ *   - convert the 1-based mesh to 0-based on input,
+ *   - drive METIS 5 through the real enum values from metis.h (FVCOM's
+ *     PTYPE slot coincidentally lands correctly; everything else gets a
+ *     METIS default),
+ *   - return 1-based element partitions.
  */
-
-/*
- * in frename.c, 6 subroutine names are mapped to the following suroutine
- * this supports the situation where the fortran compiler namespace is different
- * which results in the fortran routine calling a variety of different names
- * for Partition including:
- * 	partition
- * 	PARTITION
- * 	partition_
- * 	PARTITION_
- * 	partition__
- * 	PARTITION__
- * if the fortran compiler gives an error during linking that the routine
- * partition can't be found and you are sure you are linking in the metis 
- * libraries correctly, check carefully the name of the subroutine the compiler
- * is looking for.  If it is a different variant on "partition", add this 
- * variant at the bottom of "frename.c" and recompile the library*/
-
-/* Adapted from partdmesh.c by G. Cowles (April, 2016) for the purpose of
- * binding FVCOM (fortran) and METIS (c) 
- */ 
-
 #include <stdlib.h>
 #include <metis.h>
 #include <stdio.h>
-
-#define LTERM                   (void **) 0
 
 void partition_(int* npartsin, int* nein, int* nnin, int* ncommonin,  int* nv[], int* optionsin[], int* epartout[], int* objvalout)
 {
   int i, j, nparts, edgecut, nn, ne, ncommon, objval;
   idx_t *eptr, *eind, *epart, *npart, *options;
-   
+
   ncommon = *ncommonin;
-  nparts = *npartsin; 
+  nparts = *npartsin;
   nn = *nnin;
   ne = *nein;
 
   /* local vars */
-  nn = *nnin;
-  ne = *nein;
-  eind = (malloc(sizeof(int)*(3*ne)));
-  eptr = (malloc(sizeof(int)*(ne+1)));
-  epart = (malloc(sizeof(int)*(ne)));
-  npart = (malloc(sizeof(int)*(nn)));
-  options = (malloc(sizeof(int)*(40)));
+  eind = (malloc(sizeof(idx_t)*(3*ne)));
+  eptr = (malloc(sizeof(idx_t)*(ne+1)));
+  epart = (malloc(sizeof(idx_t)*(ne)));
+  npart = (malloc(sizeof(idx_t)*(nn)));
+  options = (malloc(sizeof(idx_t)*METIS_NOPTIONS));
 
+  /* Fortran NVG is 1-based; METIS 5 is 0-based (NUMBERING=0 below) */
   for (j=3*ne, i=0; i<j; i++) {
-      eind[i] = (*nv)[i];
+      eind[i] = (*nv)[i] - 1;
   }
 
   for (j=ne+1, i=0; i<j; i++){
-      eptr[i] = i*3+1; 
+      eptr[i] = (idx_t)i*3;
   }
 
-  for (j=40, i=0; i < j; i++) {
-      options[i] = (*optionsin)[i];
-  }
-
+  /* FVCOM's option slots are METIS-4 numbered and misaligned with METIS 5;
+   * take PTYPE (aligned by luck, value 1 = kway as FVCOM intends) and
+   * default everything else. */
+  for (i=0; i<METIS_NOPTIONS; i++) options[i] = -1;
+  options[METIS_OPTION_PTYPE]   = (*optionsin)[0];
+  options[METIS_OPTION_NUMBERING] = 0;
 
   METIS_PartMeshDual(&ne, &nn, eptr, eind, NULL, NULL, &ncommon, &nparts, NULL, options, &objval, epart, npart);
-  printf("edgecut %d\n",objval); 
+  printf("edgecut %d\n",objval);
 
-  // set return values
+  /* set return values: back to FVCOM's 1..nparts */
   (*objvalout) = objval;
 
   for (j=ne, i=0; i<j; i++) {
-       (*epartout)[i] = epart[i];
+       (*epartout)[i] = epart[i] + 1;
   }
 
-  // free up the memory
+  /* free up the memory */
   free(epart);
   free(eptr);
   free(eind);
   free(npart);
   free(options);
 
+  return;
 }
-

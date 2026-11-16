@@ -434,7 +434,7 @@
 # endif
 
 
-  CALL VecGetArrayF90(XL_EL,XVALS_EL,IERR);CHKERRQ(IERR)
+  CALL VecGetArray(XL_EL,XVALS_EL,IERR);CHKERRQ(IERR)
 
 
    IF(LSETUP == 1)THEN                                               

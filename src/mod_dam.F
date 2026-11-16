@@ -628,7 +628,7 @@ MODULE MOD_DAM
              END IF
            END DO
          END IF !COUNT > 0
-       END IF !Find==.FALSE.
+       END IF !.NOT. Find
        IF(CLP_COUNT>=1)THEN
          CLP_CELL(I)=1
          CLP_ALPHA(I) = ALPHA1/CLP_COUNT

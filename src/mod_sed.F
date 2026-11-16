@@ -1119,7 +1119,7 @@ End Subroutine Setup_Sed
 # endif
 
 !J. Ge for tracer advection
-  IF(BACKWARD_ADVECTION==.TRUE.)THEN
+  IF(BACKWARD_ADVECTION)THEN
     IF(BACKWARD_STEP==1)THEN
       do i=1,nsed
         SED0(i)%conc = sed(i)%cnew
@@ -1196,7 +1196,7 @@ End Subroutine Setup_Sed
 !    end if
 
 !J. Ge for tracer advection
-!    if(backward_advection==.true.)then
+!    if(backward_advection)then
       allocate(sed0(i)%conc(0:mt,kb  ))     ; sed0(i)%conc = 0.0
       allocate(sed2(i)%conc(0:mt,kb  ))     ; sed2(i)%conc = 0.0
 !    endif
